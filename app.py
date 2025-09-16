@@ -12,12 +12,17 @@ st.set_page_config(page_title="CheckBody", layout="centered")
 st.title("📸 CheckBody - 신체 비율 분석기")
 st.markdown("사진을 업로드하면 3D 와이어프레임과 신체 비율을 분석합니다.")
 
-# 로고 로드
+# 로고 로드 (경로 확인)
+logo_path = "assets/lucy_logo.png"
 logo = None
 try:
-    logo = Image.open("assets/lucy_logo.png").convert("RGBA")
-except:
-    st.warning("로고 파일을 찾을 수 없습니다. (assets/lucy_logo.png)")
+    if os.path.exists(logo_path):
+        logo = Image.open(logo_path).convert("RGBA")
+        st.success("✅ 로고 로드 성공")
+    else:
+        st.warning("⚠️ 로고 파일 없음: assets/lucy_logo.png")
+except Exception as e:
+    st.error(f"❌ 로고 로드 실패: {e}")
 
 # 파일 업로드
 uploaded = st.file_uploader("📷 사진을 선택하세요", type=["jpg", "jpeg", "png"])
@@ -39,25 +44,36 @@ if uploaded:
             show_logo = st.checkbox("✅ 로고 표시", value=True)
 
             # 로고 삽입 함수
-            def add_logo_to_image(img_array, logo_img, show_logo):
-                if not show_logo or logo_img is None:
+            def add_logo_to_image(img_array, logo_img, show):
+                if not show or logo_img is None:
                     return img_array
 
+                # OpenCV → PIL 변환
                 pil_img = Image.fromarray(cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB))
+                
+                # 로고 크기 조정
                 logo_resized = logo_img.resize((200, 100), Image.Resampling.LANCZOS)
                 
+                # 위치 (오른쪽 상단)
                 img_width, img_height = pil_img.size
-                position = (img_width - 200 - 10, 10)
+                position = (img_width - 210, 10)
                 
+                # 합성
                 pil_img.paste(logo_resized, position, logo_resized)
+                
+                # PIL → OpenCV 변환
                 result = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
                 return result
 
-            # 로고 적용 여부에 따라 이미지 처리
-            final_image = add_logo_to_image(result_img, logo, show_logo)
+            # 로고 삽입 전/후 비교
+            st.subheader("🖼️ 이미지 비교")
+            
+            # 로고 없이
+            st.image(result_img, caption="🔍 로고 없음", use_column_width=True)
 
-            # 결과 표시
-            st.image(final_image, caption="✅ 분석된 와이어프레임", use_column_width=True)
+            # 로고 적용
+            final_image = add_logo_to_image(result_img, logo, show_logo)
+            st.image(final_image, caption="✅ 로고 적용됨", use_column_width=True)
 
             # 분석 결과
             ratios = get_body_ratios(data)
