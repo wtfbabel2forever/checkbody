@@ -1,32 +1,3 @@
-import streamlit as st
-from analyzer import analyze_and_draw
-from reporter import get_body_ratios
-from PIL import Image
-import cv2
-import tempfile
-import os
-import numpy as np
-from datetime import datetime
-
-st.set_page_config(page_title="CheckBody", layout="centered")
-st.title("📸 CheckBody - 신체 비율 분석기")
-st.markdown("사진을 업로드하면 3D 와이어프레임과 신체 비율을 분석합니다.")
-
-# 로고 로드 (경로 확인)
-logo_path = "assets/lucy_logo.png"
-logo = None
-try:
-    if os.path.exists(logo_path):
-        logo = Image.open(logo_path).convert("RGBA")
-        st.success("✅ 로고 로드 성공")
-    else:
-        st.warning("⚠️ 로고 파일 없음: assets/lucy_logo.png")
-except Exception as e:
-    st.error(f"❌ 로고 로드 실패: {e}")
-
-# 파일 업로드
-uploaded = st.file_uploader("📷 사진을 선택하세요", type=["jpg", "jpeg", "png"])
-
 if uploaded:
     # 임시 파일 생성
     with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
@@ -48,20 +19,13 @@ if uploaded:
                 if not show or logo_img is None:
                     return img_array
 
-                # OpenCV → PIL 변환
                 pil_img = Image.fromarray(cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB))
-                
-                # 로고 크기 조정
                 logo_resized = logo_img.resize((200, 100), Image.Resampling.LANCZOS)
                 
-                # 위치 (오른쪽 상단)
                 img_width, img_height = pil_img.size
                 position = (img_width - 210, 10)
                 
-                # 합성
                 pil_img.paste(logo_resized, position, logo_resized)
-                
-                # PIL → OpenCV 변환
                 result = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
                 return result
 
@@ -84,6 +48,9 @@ if uploaded:
             now = datetime.now()
             timestamp = now.strftime("%Y%m%d_%H%M%S")
             filename = f"checkbody_{timestamp}.png"
+            
+            # 파일명 확인
+            st.write(f"💾 저장될 파일명: `{filename}`")
 
             rgb_image = cv2.cvtColor(final_image, cv2.COLOR_BGR2RGB)
             result_pil = Image.fromarray(rgb_image)
