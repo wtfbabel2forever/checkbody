@@ -3,6 +3,8 @@ from analyzer import analyze_and_draw
 from reporter import get_body_ratios
 from PIL import Image
 import cv2
+import tempfile
+import os
 
 st.set_page_config(page_title="CheckBody", layout="centered")
 st.title("📸 CheckBody - 신체 비율 분석기")
@@ -11,11 +13,13 @@ st.markdown("사진을 업로드하면 3D 와이어프레임과 신체 비율을
 uploaded = st.file_uploader("📷 사진을 선택하세요", type=["jpg", "jpeg", "png"])
 
 if uploaded:
-    with open("temp.jpg", "wb") as f:
-        f.write(uploaded.getbuffer())
+    # 임시 파일 생성
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
+        tmp_file.write(uploaded.getvalue())
+        temp_path = tmp_file.name
 
     with st.spinner("🔍 분석 중입니다..."):
-        result_img, data = analyze_and_draw("temp.jpg")
+        result_img, data = analyze_and_draw(temp_path)
 
         if result_img is None:
             st.error(data)
@@ -34,3 +38,6 @@ if uploaded:
                 file_name="checkbody_result.png",
                 mime="image/png"
             )
+
+    # 임시 파일 삭제
+    os.unlink(temp_path)
